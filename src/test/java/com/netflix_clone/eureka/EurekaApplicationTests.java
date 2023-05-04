@@ -1,4 +1,4 @@
-package com.eureka.eureka;
+package com.netflix_clone.eureka;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
