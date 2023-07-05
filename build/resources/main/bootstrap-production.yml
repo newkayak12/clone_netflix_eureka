@@ -2,6 +2,6 @@ spring:
   #  profiles:
   #    active: local
   application:
-    name: netflix_clone
+    name: netflix_clone_eureka
   config:
     import: configserver:http://newkayak.iptime.org:8888

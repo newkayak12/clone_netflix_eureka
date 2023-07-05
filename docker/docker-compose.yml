@@ -1,0 +1,161 @@
+version: '3'
+
+services:
+
+  rabbitmq:
+    container_name: rabbitmq
+#    build:
+#      context: .
+    image: rabbitmq:management
+    ports:
+      - 5672:5672
+      - 15672:15672
+  redis:
+    container_name: redis
+#    build:
+#      context: .
+    image: redis:latest
+    ports:
+     - 6379:6379
+  mariadb:
+    container_name: mariadb
+#    build:
+#      context: .
+    image: mariadb:10.6
+    volumes:
+      - "/home/mariadb/conf.d:/etc/mysql/conf.d"
+      - "/home/mariadb/data:/var/lib/mysql"
+    ports:
+     - 3306:3306
+    environment:
+      MARIADB_USER: 'netflix_clone'
+      MARIADB_PASSWORD: "q1w2e3r4T%"
+      MARIADB_ROOT_PASSWORD: "q1w2e3r4T%"
+    restart: always
+
+##################################
+
+  eureka:
+    container_name: eureka
+#    build:
+#      context: .
+    image: amazoncorretto:11
+    volumes: # 공유할 볼륨
+      - /home/projects:/home/projects
+    ports: # 열어 둘 포트
+      - 8761:8761
+    command: ['java','-jar', '-Dspring.profiles.active=production', '/home/projects/eureka-1.0.0.jar']
+    depends_on:
+      - rabbitmq
+      - redis
+      - mariadb
+
+  admin:
+    container_name: admin
+#    build:
+#      context: .
+    image: amazoncorretto:11
+    volumes: # 공유할 볼륨
+      - /home/projects:/home/projects
+    expose: # 열어 둘 포트
+      - 8761
+    command: ['java','-jar', '-Dspring.profiles.active=production', '/home/projects/admin-1.0.0.jar']
+    depends_on:
+      - eureka
+    links:
+      - eureka
+
+  gateway:
+    container_name: gateway
+#    build:
+#      context: .
+    image: amazoncorretto:11
+    volumes: # 공유할 볼륨
+      - /home/projects:/home/projects
+    ports: # 열어 둘 포트
+      - 8000:8000
+    command: ['java','-jar', '-Dspring.profiles.active=production', '/home/projects/gateway-1.0.0.jar']
+    depends_on:
+      - eureka
+    links:
+      - eureka
+  user_service:
+    container_name: user_service
+#    build:
+#      context: .
+    image: amazoncorretto:11
+    volumes: # 공유할 볼륨
+      - /home/projects:/home/projects
+    expose: # 열어 둘 포트
+      - 8000
+    command: ['java','-jar', '-Dspring.profiles.active=production', '/home/projects/userservice-1.0.0.jar']
+    depends_on:
+      - gateway
+    links:
+      - rabbitmq
+      - redis
+      - mariadb
+      - eureka
+  board_service:
+    container_name: board_service
+#    build:
+#      context: .
+    image: amazoncorretto:11
+    volumes: # 공유할 볼륨
+      - /home/projects:/home/projects
+    expose: # 열어 둘 포트
+      - 8000
+    command: ['java','-jar', '-Dspring.profiles.active=production', '/home/projects/boardservice-1.0.0.jar']
+    depends_on:
+      - gateway
+    links:
+      - rabbitmq
+      - redis
+      - mariadb
+      - eureka
+  movie_service:
+    container_name: movie_service
+#    build:
+#      context: .
+    image: amazoncorretto:11
+    volumes: # 공유할 볼륨
+      - /home/projects:/home/projects
+    expose: # 열어 둘 포트
+      - 8000
+    command: ['java','-jar', '-Dspring.profiles.active=production', '/home/projects/movieservice-1.0.0.jar']
+    depends_on:
+      - gateway
+    links:
+      - rabbitmq
+      - redis
+      - mariadb
+      - eureka
+  file_service:
+    container_name: file_service
+#    build:
+#      context: .
+    image: amazoncorretto:11
+    volumes: # 공유할 볼륨
+      - /home/projects:/home/projects
+      - /home/files:/home/files
+    expose: # 열어 둘 포트
+      - 8000
+    command: ['java','-jar', '-Dspring.profiles.active=production', '/home/projects/fileservice-1.0.0.jar']
+    depends_on:
+      - gateway
+    links:
+      - rabbitmq
+      - redis
+      - mariadb
+      - eureka
+  apache:
+    container_name: httpd
+#    build:
+#      context: .
+    image: httpd:2.4
+    volumes: # 공유할 볼륨
+      - /home/apache2/:/usr/local/apache2/
+      - /home/files/:/home/files
+    ports: # 열어 둘 포트
+      - 80:80
+      - 7070:7070
